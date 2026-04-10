@@ -1,39 +1,22 @@
-# Mind Note Map
+# Mind Canvas Modular for Obsidian
 
-Obsidian plugin MVP: mind-map view with note-backed nodes.
+Converted from the uploaded web tool source `mind-canvas-modular-v1.7.0` into an Obsidian plugin.
 
-## Files that matter to Obsidian / BRAT
+## Files required by Obsidian / BRAT
 - `manifest.json`
 - `main.js`
 - `styles.css`
 - `versions.json`
 
-## What was blocking BRAT
-BRAT does **not** install this from repo files alone in your current flow.
-It needs a GitHub **Release** whose tag matches `manifest.json.version`, and that release must expose `manifest.json`, `main.js`, and `styles.css` as release assets.
+## Install with BRAT
+1. Upload these files to the root of a public GitHub repo.
+2. Create a GitHub release tagged `1.7.0`.
+3. Attach `manifest.json`, `main.js`, `styles.css`, `versions.json` to that release.
+4. Add the repo in BRAT.
 
-## Fast path
-1. Upload all files in this zip to the root of a public GitHub repo.
-2. Go to **Releases** and create tag **`0.1.0`**.
-3. Publish the release.
-4. Attach these files to the release:
-   - `manifest.json`
-   - `main.js`
-   - `styles.css`
-   - `versions.json`
-5. In BRAT, add the repo URL.
-
-## Easier path with GitHub Actions
-This zip includes `.github/workflows/release.yml`.
-After uploading the repo, do this:
-1. Open GitHub repo → **Actions** → enable workflows if asked.
-2. Create a tag named **`0.1.0`** and push it, or create it in the GitHub web UI.
-3. The workflow will automatically create a GitHub Release and upload:
-   - `manifest.json`
-   - `main.js`
-   - `styles.css`
-   - `versions.json`
-4. Then install from BRAT.
-
-## Plugin id
-`mind-note-map`
+## What this plugin keeps
+- same modular mind canvas UI style
+- drag node / pan / pinch zoom / auto layout / diagram layout
+- inline log panel and copy log all
+- editor sheet
+- state persistence via Obsidian plugin data instead of browser localStorage

@@ -1,9 +1,9 @@
 {
-  "id": "mind-note-map",
-  "name": "Mind Note Map",
-  "version": "0.1.0",
+  "id": "mind-canvas-modular",
+  "name": "Mind Canvas Modular",
+  "version": "1.7.0",
   "minAppVersion": "1.5.0",
-  "description": "A MindNode-style mind map view for Obsidian with note-backed nodes.",
+  "description": "Mind canvas plugin converted from the modular web tool.",
   "author": "Louis Alviss",
   "authorUrl": "",
   "isDesktopOnly": false
