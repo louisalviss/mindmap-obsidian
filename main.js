@@ -1,9 +1,9 @@
-const { Plugin, ItemView, Notice, WorkspaceLeaf } = require("obsidian");
+const { Plugin, ItemView, Notice, WorkspaceLeaf, normalizePath, TFile } = require("obsidian");
 
 const VIEW_TYPE = "mind-canvas-modular-view";
-const PLUGIN_VERSION = "v1.7.0";
+const PLUGIN_VERSION = "v1.8.0";
 const CANVAS_CSS = ':host{\n      --bg:#08111a;\n      --bg2:#0c1826;\n      --panel:rgba(8,17,27,.88);\n      --panel2:rgba(11,23,36,.92);\n      --line:rgba(95,168,214,.72);\n      --lineActive:rgba(130,236,255,.98);\n      --text:#edf5ff;\n      --muted:#8ea8be;\n      --accent:#7eecff;\n      --accent2:#19c8f2;\n      --danger:#ff7f8f;\n      --grid:rgba(112,166,205,.09);\n      --shadow:0 16px 36px rgba(0,0,0,.30);\n      --radius:18px;\n      --node-w:170px;\n      --node-h:56px;\n      --safe-top:env(safe-area-inset-top);\n      --safe-bottom:env(safe-area-inset-bottom);\n      --safe-left:env(safe-area-inset-left);\n      --safe-right:env(safe-area-inset-right);\n    }\n    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}\n    html,body{\n      margin:0;height:100%;overflow:hidden;\n      background:var(--bg);\n      color:var(--text);\n      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;\n    }\n    body{\n      background:\n        radial-gradient(circle at top, rgba(25,200,242,.10), transparent 28%),\n        linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%);\n    }\n    .app{margin:0;height:100%;position:absolute;inset:0;display:flex;flex-direction:column;overflow:hidden;background:radial-gradient(circle at top, rgba(25,200,242,.10), transparent 28%), linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}\n    .topbar{\n      position:relative;z-index:40;\n      padding:calc(var(--safe-top) + 10px) calc(var(--safe-right) + 14px) 10px calc(var(--safe-left) + 14px);\n      background:linear-gradient(180deg, rgba(6,13,22,.97), rgba(6,13,22,.76));\n      border-bottom:1px solid rgba(255,255,255,.05);\n      backdrop-filter:blur(16px);\n    }\n    .top-row{display:flex;gap:10px;align-items:flex-start}\n    .title-wrap{min-width:0;flex:1}\n    .title{font-size:16px;font-weight:800;letter-spacing:.1px}\n    .meta{margin-top:3px;font-size:12px;color:var(--muted)}\n    .version{\n      flex:none;\n      padding:9px 12px;\n      border-radius:999px;\n      border:1px solid rgba(126,236,255,.14);\n      background:rgba(18,35,52,.86);\n      color:#b7fbff;\n      font-size:12px;font-weight:800;\n      white-space:nowrap;\n      box-shadow:0 10px 26px rgba(0,0,0,.18);\n    }\n    .status-row{\n      display:flex;gap:8px;margin-top:10px;overflow:auto hidden;scrollbar-width:none;\n    }\n    .status-row::-webkit-scrollbar{display:none}\n    .tiny{\n      flex:none;\n      padding:7px 10px;\n      border-radius:999px;\n      border:1px solid rgba(255,255,255,.06);\n      background:rgba(255,255,255,.03);\n      color:var(--muted);\n      font-size:12px;font-weight:700;\n      white-space:nowrap;\n    }\n\n    .workspace{position:relative;flex:1;min-height:0;overflow:hidden}\n    .viewport{\n      position:absolute;inset:0;overflow:hidden;\n      user-select:none;\n      background:\n        linear-gradient(var(--grid) 1px, transparent 1px),\n        linear-gradient(90deg, var(--grid) 1px, transparent 1px);\n      background-size:28px 28px, 28px 28px;\n      background-position:center;\n      touch-action:none;\n    }\n    .world{\n      position:absolute;left:0;top:0;width:4200px;height:4200px;\n      transform-origin:0 0;\n      will-change:transform;\n    }\n    canvas.edges{position:absolute;inset:0;width:4200px;height:4200px;pointer-events:none}\n    .nodes{position:absolute;inset:0}\n\n    .node{\n      position:absolute;\n      width:var(--node-w);\n      min-height:var(--node-h);\n      padding:12px 14px;\n      border-radius:18px;\n      display:flex;align-items:center;justify-content:center;\n      text-align:center;\n      color:var(--text);\n      font-size:14px;font-weight:800;line-height:1.22;\n      border:1px solid rgba(255,255,255,.09);\n      background:linear-gradient(180deg, rgba(16,33,51,.98), rgba(9,20,32,.98));\n      box-shadow:inset 0 0 0 1px rgba(126,236,255,.03), 0 14px 28px rgba(0,0,0,.22);\n      transition:border-color .12s ease, box-shadow .12s ease, transform .08s ease;\n      cursor:grab;\n      touch-action:none;\n    }\n    .node.root{\n      color:#06222d;\n      border-color:rgba(255,255,255,.22);\n      background:linear-gradient(180deg, #3ae1ff 0%, #16bbe5 100%);\n      box-shadow:0 16px 34px rgba(22,187,229,.24);\n    }\n    .node.selected{\n      border-color:rgba(126,236,255,.88);\n      box-shadow:0 0 0 2px rgba(126,236,255,.20), 0 18px 34px rgba(0,0,0,.26);\n    }\n    .node.dragging{\n      cursor:grabbing;\n      transform:scale(1.015);\n      box-shadow:0 0 0 2px rgba(126,236,255,.25), 0 22px 40px rgba(0,0,0,.30);\n    }\n    .node.drop-target{\n      border-color:rgba(126,236,255,.98);\n      box-shadow:0 0 0 3px rgba(126,236,255,.18), inset 0 0 0 1px rgba(126,236,255,.14), 0 22px 40px rgba(0,0,0,.30);\n    }\n    .node-text{\n      display:-webkit-box;\n      -webkit-box-orient:vertical;\n      -webkit-line-clamp:2;\n      overflow:hidden;\n      word-break:break-word;\n    }\n\n    .zoom-box{\n      position:absolute;right:12px;top:12px;z-index:31;\n      display:flex;flex-direction:column;gap:8px;\n    }\n    .zoom-btn{\n      width:44px;height:44px;border-radius:16px;\n      border:1px solid rgba(255,255,255,.08);\n      background:rgba(8,17,27,.84);\n      color:var(--text);\n      font-size:18px;font-weight:900;\n      box-shadow:var(--shadow);\n      backdrop-filter:blur(12px);\n    }\n\n    .toolbar{\n      position:absolute;left:10px;right:10px;bottom:calc(var(--safe-bottom) + 10px);\n      z-index:45;\n      padding:10px;\n      border-radius:24px;\n      border:1px solid rgba(255,255,255,.07);\n      background:rgba(7,14,23,.78);\n      box-shadow:var(--shadow);\n      backdrop-filter:blur(18px);\n      display:flex;flex-direction:column;gap:8px;\n    }\n    .toolbar-row{display:flex;gap:8px;align-items:center}\n    .actions-row .tool{min-width:0}\n    .bottom-row{align-items:center}\n    .tool{\n      flex:1 1 0;\n      min-height:46px;\n      padding:0 12px;\n      border-radius:16px;\n      border:1px solid rgba(255,255,255,.08);\n      background:linear-gradient(180deg, rgba(17,31,47,.98), rgba(9,18,30,.98));\n      color:var(--text);\n      font-size:15px;font-weight:800;\n      letter-spacing:.1px;\n      box-shadow:0 10px 22px rgba(0,0,0,.18);\n      white-space:nowrap;\n      overflow:hidden;\n      text-overflow:ellipsis;\n    }\n    .tool.primary{\n      background:linear-gradient(180deg, #43e6ff, #17bde7);\n      color:#06232d;\n      border-color:rgba(255,255,255,.18);\n      box-shadow:0 12px 28px rgba(23,189,231,.24);\n    }\n    .tool.warn{\n      color:#ffd6dc;\n      border-color:rgba(255,127,143,.28);\n      background:linear-gradient(180deg, rgba(35,18,25,.98), rgba(23,11,16,.98));\n    }\n    .tool.ghost{\n      flex:0 0 auto;\n      min-width:72px;\n      padding:0 14px;\n      background:rgba(255,255,255,.03);\n      color:var(--muted);\n    }\n    .util-btn{min-width:78px}\n    .segment{\n      flex:1 1 auto;\n      display:flex;\n      padding:4px;\n      border-radius:18px;\n      border:1px solid rgba(255,255,255,.07);\n      background:rgba(255,255,255,.03);\n      min-width:0;\n      box-shadow:inset 0 1px 0 rgba(255,255,255,.02);\n    }\n    .seg{\n      flex:1 1 0;\n      min-height:40px;\n      border:none;\n      border-radius:14px;\n      background:transparent;\n      color:var(--muted);\n      font-size:13px;\n      font-weight:800;\n      white-space:nowrap;\n      padding:0 10px;\n    }\n    .seg.active{\n      color:#06232d;\n      background:linear-gradient(180deg, #43e6ff, #17bde7);\n      box-shadow:0 10px 18px rgba(23,189,231,.22);\n    }\n    .layout-segment .seg{font-size:12px;padding:0 8px}\n\n    .log-panel{\n      position:absolute;left:10px;right:10px;bottom:calc(var(--safe-bottom) + 136px);\n      z-index:44;\n      border-radius:20px;\n      border:1px solid rgba(255,255,255,.08);\n      background:rgba(7,14,23,.90);\n      box-shadow:var(--shadow);\n      backdrop-filter:blur(16px);\n      overflow:hidden;\n      opacity:0;pointer-events:none;\n      transform:translateY(16px);\n      transition:opacity .16s ease, transform .16s ease;\n      max-height:min(38vh,320px);\n    }\n    .log-panel.open{opacity:1;pointer-events:auto;transform:translateY(0)}\n    .log-head{\n      display:flex;align-items:center;justify-content:space-between;gap:8px;\n      padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.06);font-weight:800;\n    }\n    .log-actions{display:flex;gap:8px}\n    .mini-btn{\n      min-height:36px;padding:0 12px;border-radius:12px;\n      border:1px solid rgba(255,255,255,.08);\n      background:rgba(255,255,255,.03);\n      color:var(--text);font-size:12px;font-weight:700;\n    }\n    .log-content{\n      padding:8px 14px 14px;overflow:auto;max-height:220px;\n      white-space:pre-wrap;word-break:break-word;\n      font-family:ui-monospace,SFMono-Regular,Menlo,monospace;\n      font-size:12px;line-height:1.45;color:#b9cde0;\n    }\n    .log-line{padding:5px 0;border-bottom:1px dashed rgba(255,255,255,.04)}\n\n    .editor{\n      position:fixed;inset:0;z-index:80;\n      display:none;align-items:flex-end;\n      background:rgba(0,0,0,.34);\n      backdrop-filter:blur(3px);\n    }\n    .editor.open{display:flex}\n    .editor-sheet{\n      width:100%;\n      padding:14px calc(var(--safe-right) + 14px) calc(var(--safe-bottom) + 14px) calc(var(--safe-left) + 14px);\n      border-radius:24px 24px 0 0;\n      background:linear-gradient(180deg, rgba(12,22,35,.98), rgba(8,16,26,.98));\n      border-top:1px solid rgba(255,255,255,.07);\n      box-shadow:0 -16px 40px rgba(0,0,0,.28);\n    }\n    .editor-top{\n      display:flex;align-items:flex-start;justify-content:space-between;gap:10px;\n    }\n    .editor-label{font-size:12px;color:var(--muted);font-weight:700}\n    .editor-title{font-size:18px;font-weight:800;margin-top:4px}\n    .editor-node-chip{\n      flex:none;\n      max-width:42vw;\n      padding:8px 12px;\n      border-radius:999px;\n      border:1px solid rgba(126,236,255,.16);\n      background:rgba(18,35,52,.86);\n      color:#b7fbff;\n      font-size:12px;\n      font-weight:800;\n      white-space:nowrap;\n      overflow:hidden;\n      text-overflow:ellipsis;\n    }\n    .editor-area{\n      width:100%;min-height:132px;resize:none;\n      margin-top:14px;padding:16px 16px 18px;\n      border-radius:18px;\n      border:1px solid rgba(126,236,255,.10);\n      background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.025));\n      color:var(--text);\n      font:700 17px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;\n      outline:none;\n      box-shadow:inset 0 0 0 1px rgba(126,236,255,.02);\n    }\n    .editor-foot{\n      margin-top:14px;\n      display:flex;justify-content:space-between;align-items:center;gap:10px;\n    }\n    .count{font-size:12px;color:var(--muted)}\n    .editor-actions{display:flex;gap:8px}\n    .sheet-btn{\n      min-height:44px;padding:0 16px;border-radius:14px;\n      border:1px solid rgba(255,255,255,.08);\n      background:rgba(255,255,255,.03);\n      color:var(--text);font-size:14px;font-weight:800;\n    }\n    .sheet-btn.primary{\n      background:linear-gradient(180deg, #43e6ff, #17bde7);\n      color:#06232d;border-color:rgba(255,255,255,.16);\n      box-shadow:0 12px 26px rgba(23,189,231,.22);\n    }\n\n    @media (min-width: 860px){\n      .topbar{padding:14px 16px 12px}\n      .toolbar{left:16px;right:auto;width:620px}\n      .log-panel{left:16px;right:auto;width:560px}\n      .editor{align-items:center;justify-content:center}\n      .editor-sheet{\n        width:min(540px,calc(100vw - 32px));\n        border-radius:24px;\n        padding:16px;\n        border:1px solid rgba(255,255,255,.08);\n      }\n    }\n';
-const CANVAS_HTML = '<div class="app">\n    <header class="topbar">\n      <div class="top-row">\n        <div class="title-wrap">\n          <div class="title">Mind Canvas Test</div>\n          <div class="meta">Source module hóa: viewport / tree / render / gesture / editor</div>\n        </div>\n        <div class="version">UI version v1.7.0</div>\n      </div>\n      <div class="status-row">\n        <div class="tiny" id="statusPill">Đã lưu</div>\n        <div class="tiny" id="nodeCountPill">0 node</div>\n        <div class="tiny" id="zoomPill">100%</div>\n        <div class="tiny" id="layoutModePill">Free canvas</div>\n        <div class="tiny" id="linkModePill">Dây cong</div>\n      </div>\n    </header>\n\n    <main class="workspace">\n      <div class="viewport" id="viewport">\n        <div class="zoom-box">\n          <button class="zoom-btn" id="zoomOutBtn" type="button">−</button>\n          <button class="zoom-btn" id="fitBtn" type="button">⊙</button>\n          <button class="zoom-btn" id="zoomInBtn" type="button">+</button>\n        </div>\n        <div class="world" id="world">\n          <canvas class="edges" id="edges" width="4200" height="4200"></canvas>\n          <div class="nodes" id="nodes"></div>\n        </div>\n      </div>\n\n      <section class="log-panel" id="logPanel">\n        <div class="log-head">\n          <div>Log</div>\n          <div class="log-actions">\n            <button class="mini-btn" id="copyLogBtn" type="button">Copy log all</button>\n            <button class="mini-btn" id="clearLogBtn" type="button">Xóa log</button>\n          </div>\n        </div>\n        <div class="log-content" id="logContent"></div>\n      </section>\n\n      <div class="toolbar">\n        <div class="toolbar-row actions-row">\n          <button class="tool primary" id="addChildBtn" type="button">+ Con</button>\n          <button class="tool" id="addSiblingBtn" type="button">+ Ngang</button>\n          <button class="tool" id="editBtn" type="button">Sửa</button>\n          <button class="tool warn" id="deleteBtn" type="button">Xóa</button>\n        </div>\n        <div class="toolbar-row bottom-row">\n          <div class="segment" role="tablist" aria-label="Kiểu dây">\n            <button class="seg active" id="curveModeBtn" type="button" aria-selected="true">Dây cong</button>\n            <button class="seg" id="orthModeBtn" type="button" aria-selected="false">Dây vuông</button>\n          </div>\n          <button class="tool ghost util-btn" id="toggleLogBtn" type="button">Log</button>\n          <button class="tool ghost util-btn" id="resetBtn" type="button">Reset</button>\n        </div>\n        <div class="toolbar-row bottom-row">\n          <div class="segment layout-segment" role="tablist" aria-label="Chế độ bố cục">\n            <button class="seg active" id="freeLayoutBtn" type="button" aria-selected="true">Free</button>\n            <button class="seg" id="autoLayoutBtn" type="button" aria-selected="false">Auto cây</button>\n            <button class="seg" id="diagramLayoutBtn" type="button" aria-selected="false">Diagram</button>\n          </div>\n          <button class="tool ghost util-btn" id="relayoutBtn" type="button">Xếp cây</button>\n        </div>\n      </div>\n    </main>\n  </div>\n\n  <div class="editor" id="editor">\n    <div class="editor-sheet">\n      <div class="editor-top">\n        <div>\n          <div class="editor-label">Sửa nội dung node</div>\n          <div class="editor-title">Text của node</div>\n        </div>\n        <div class="editor-node-chip" id="editorNodeChip">Node</div>\n      </div>\n      <textarea class="editor-area" id="editorArea" maxlength="120" placeholder="Nhập text cho node"></textarea>\n      <div class="editor-foot">\n        <div class="count" id="editorCount">0 / 120</div>\n        <div class="editor-actions">\n          <button class="sheet-btn" id="editorCancelBtn" type="button">Hủy</button>\n          <button class="sheet-btn primary" id="editorSaveBtn" type="button">Lưu</button>\n        </div>\n      </div>\n    </div>\n  </div>';
+const CANVAS_HTML = '<div class="app">\n    <header class="topbar">\n      <div class="top-row">\n        <div class="title-wrap">\n          <div class="title">Mind Canvas Modular</div>\n          <div class="meta">Mobile fix + note-backed nodes for Obsidian</div>\n        </div>\n        <div class="version">UI version v1.8.0</div>\n      </div>\n      <div class="status-row">\n        <div class="tiny" id="statusPill">Đã lưu</div>\n        <div class="tiny" id="nodeCountPill">0 node</div>\n        <div class="tiny" id="zoomPill">100%</div>\n        <div class="tiny" id="layoutModePill">Free canvas</div>\n        <div class="tiny" id="linkModePill">Dây cong</div>\n      </div>\n    </header>\n\n    <main class="workspace">\n      <div class="viewport" id="viewport">\n        <div class="zoom-box">\n          <button class="zoom-btn" id="zoomOutBtn" type="button">−</button>\n          <button class="zoom-btn" id="fitBtn" type="button">⊙</button>\n          <button class="zoom-btn" id="zoomInBtn" type="button">+</button>\n        </div>\n        <div class="world" id="world">\n          <canvas class="edges" id="edges" width="4200" height="4200"></canvas>\n          <div class="nodes" id="nodes"></div>\n        </div>\n      </div>\n\n      <section class="log-panel" id="logPanel">\n        <div class="log-head">\n          <div>Log</div>\n          <div class="log-actions">\n            <button class="mini-btn" id="copyLogBtn" type="button">Copy log all</button>\n            <button class="mini-btn" id="clearLogBtn" type="button">Xóa log</button>\n          </div>\n        </div>\n        <div class="log-content" id="logContent"></div>\n      </section>\n\n      <div class="toolbar">\n        <div class="toolbar-row actions-row">\n          <button class="tool primary" id="addChildBtn" type="button">+ Con</button>\n          <button class="tool" id="addSiblingBtn" type="button">+ Ngang</button>\n          <button class="tool" id="editBtn" type="button">Sửa</button>\n          <button class="tool warn" id="deleteBtn" type="button">Xóa</button>\n        </div>\n        <div class="toolbar-row note-row">\n          <button class="tool" id="addNoteChildBtn" type="button">+ Note</button>\n          <button class="tool" id="linkActiveNoteBtn" type="button">Gắn note</button>\n          <button class="tool" id="openNoteBtn" type="button">Mở note</button>\n        </div>\n        <div class="toolbar-row bottom-row">\n          <div class="segment" role="tablist" aria-label="Kiểu dây">\n            <button class="seg active" id="curveModeBtn" type="button" aria-selected="true">Dây cong</button>\n            <button class="seg" id="orthModeBtn" type="button" aria-selected="false">Dây vuông</button>\n          </div>\n          <button class="tool ghost util-btn" id="toggleLogBtn" type="button">Log</button>\n          <button class="tool ghost util-btn" id="resetBtn" type="button">Reset</button>\n        </div>\n        <div class="toolbar-row bottom-row">\n          <div class="segment layout-segment" role="tablist" aria-label="Chế độ bố cục">\n            <button class="seg active" id="freeLayoutBtn" type="button" aria-selected="true">Free</button>\n            <button class="seg" id="autoLayoutBtn" type="button" aria-selected="false">Auto cây</button>\n            <button class="seg" id="diagramLayoutBtn" type="button" aria-selected="false">Diagram</button>\n          </div>\n          <button class="tool ghost util-btn" id="relayoutBtn" type="button">Xếp cây</button>\n        </div>\n      </div>\n    </main>\n  </div>\n\n  <div class="editor" id="editor">\n    <div class="editor-sheet">\n      <div class="editor-top">\n        <div>\n          <div class="editor-label">Sửa nội dung node</div>\n          <div class="editor-title">Text của node</div>\n        </div>\n        <div class="editor-node-chip" id="editorNodeChip">Node</div>\n      </div>\n      <textarea class="editor-area" id="editorArea" maxlength="120" placeholder="Nhập text cho node"></textarea>\n      <div class="editor-foot">\n        <div class="count" id="editorCount">0 / 120</div>\n        <div class="editor-actions">\n          <button class="sheet-btn" id="editorCancelBtn" type="button">Hủy</button>\n          <button class="sheet-btn primary" id="editorSaveBtn" type="button">Lưu</button>\n        </div>\n      </div>\n    </div>\n  </div>';
 
 function escapeHtml(text) {
   const div = document.createElement("div");
@@ -310,11 +310,104 @@ class MindCanvasModularView extends ItemView {
       },
     };
 
+
+    services.Notes = {
+      notesFolder: 'Mind Canvas Notes',
+      sanitizeName(name) {
+        const cleaned = String(name || 'Node')
+          .replace(/[\/:*?"<>|#\[\]{}]+/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+        return cleaned || 'Node';
+      },
+      async ensureFolder(path) {
+        const norm = normalizePath(path);
+        const parts = norm.split('/').filter(Boolean);
+        let current = '';
+        for (const part of parts) {
+          current = current ? `${current}/${part}` : part;
+          if (!plugin.app.vault.getAbstractFileByPath(current)) {
+            try { await plugin.app.vault.createFolder(current); } catch (e) {}
+          }
+        }
+      },
+      async makeUniquePath(basePath) {
+        let candidate = normalizePath(basePath);
+        if (!plugin.app.vault.getAbstractFileByPath(candidate)) return candidate;
+        const m = candidate.match(/^(.*?)(\.[^./]+)?$/);
+        const stem = m ? m[1] : candidate;
+        const ext = m && m[2] ? m[2] : '';
+        let i = 2;
+        while (plugin.app.vault.getAbstractFileByPath(`${stem} ${i}${ext}`)) i += 1;
+        return `${stem} ${i}${ext}`;
+      },
+      getFileForNode(node) {
+        if (!node || !node.notePath) return null;
+        const file = plugin.app.vault.getAbstractFileByPath(node.notePath);
+        return file instanceof TFile ? file : null;
+      },
+      async openNodeNote(nodeId) {
+        const node = services.Tree.getNode(nodeId || State.selectedId);
+        if (!node) return NoticeSafe('Chưa chọn node');
+        const file = this.getFileForNode(node);
+        if (!file) return NoticeSafe('Node này chưa có note');
+        await plugin.app.workspace.getLeaf(true).openFile(file);
+        services.UI.setStatus('Đã mở note');
+      },
+      async linkActiveFileToNode(nodeId) {
+        const node = services.Tree.getNode(nodeId || State.selectedId);
+        if (!node) return NoticeSafe('Chưa chọn node');
+        const file = plugin.app.workspace.getActiveFile();
+        if (!(file instanceof TFile)) return NoticeSafe('Không thấy note đang mở');
+        node.notePath = file.path;
+        if (!node.text || /^Node/.test(node.text)) node.text = file.basename || node.text;
+        services.Logger.add(`Gắn note {"id":"${node.id}","path":"${file.path}"}`);
+        services.Render.all();
+        services.Persist.save();
+      },
+      async createNoteForNode(nodeId, openAfter = true) {
+        const node = services.Tree.getNode(nodeId || State.selectedId);
+        if (!node) return NoticeSafe('Chưa chọn node');
+        const existing = this.getFileForNode(node);
+        if (existing) {
+          if (openAfter) await plugin.app.workspace.getLeaf(true).openFile(existing);
+          return existing;
+        }
+        await this.ensureFolder(this.notesFolder);
+        const baseName = this.sanitizeName(node.text || 'Node');
+        const path = await this.makeUniquePath(`${this.notesFolder}/${baseName}.md`);
+        const file = await plugin.app.vault.create(path, `# ${baseName}
+
+`);
+        node.notePath = file.path;
+        if (!node.text || /^Node/.test(node.text)) node.text = file.basename || baseName;
+        services.Logger.add(`Tạo note {"id":"${node.id}","path":"${file.path}"}`);
+        services.Render.all();
+        services.Persist.save();
+        if (openAfter) await plugin.app.workspace.getLeaf(true).openFile(file);
+        return file;
+      },
+      async addNoteChild(parentId) {
+        const parent = services.Tree.getNode(parentId || State.selectedId || services.Tree.getRootId());
+        if (!parent) return NoticeSafe('Không tìm thấy node mẹ');
+        services.Actions.addChild(parent.id);
+        const id = State.selectedId;
+        await this.createNoteForNode(id, false);
+        const node = services.Tree.getNode(id);
+        if (node && node.notePath) {
+          const file = this.getFileForNode(node);
+          if (file) await plugin.app.workspace.getLeaf(true).openFile(file);
+        }
+        services.UI.setStatus('Đã tạo node note');
+      },
+    };
+
     services.Render = {
       nodes() {
         Dom.nodes.innerHTML = Object.values(State.nodes).map(node => {
-          const cls = ['node', node.parentId === null ? 'root' : '', node.id === State.selectedId ? 'selected' : '', State.pointer?.type === 'drag-node' && State.pointer?.id === node.id ? 'dragging' : '', node.id === State.dropTargetId ? 'drop-target' : ''].filter(Boolean).join(' ');
-          return `<div class="${cls}" data-id="${node.id}" style="left:${node.x}px;top:${node.y}px"><div class="node-text">${escapeHtml(node.text)}</div></div>`;
+          const cls = ['node', node.parentId === null ? 'root' : '', node.notePath ? 'has-note' : '', node.id === State.selectedId ? 'selected' : '', State.pointer?.type === 'drag-node' && State.pointer?.id === node.id ? 'dragging' : '', node.id === State.dropTargetId ? 'drop-target' : ''].filter(Boolean).join(' ');
+          const noteTitle = node.notePath ? ` data-note="${escapeHtml(node.notePath)}"` : '';
+          return `<div class="${cls}" data-id="${node.id}"${noteTitle} style="left:${node.x}px;top:${node.y}px"><div class="node-text">${escapeHtml(node.text)}</div></div>`;
         }).join('');
       },
       edge(parent, child) {
@@ -657,6 +750,9 @@ class MindCanvasModularView extends ItemView {
       events() {
         Dom.addChildBtn.addEventListener('click', () => services.Actions.addChild(State.selectedId || services.Tree.getRootId()));
         Dom.addSiblingBtn.addEventListener('click', () => services.Actions.addSibling(State.selectedId || services.Tree.getRootId()));
+        Dom.addNoteChildBtn.addEventListener('click', async () => { await services.Notes.addNoteChild(State.selectedId || services.Tree.getRootId()); });
+        Dom.linkActiveNoteBtn.addEventListener('click', async () => { await services.Notes.linkActiveFileToNode(State.selectedId || services.Tree.getRootId()); });
+        Dom.openNoteBtn.addEventListener('click', async () => { await services.Notes.openNodeNote(State.selectedId || services.Tree.getRootId()); });
         Dom.editBtn.addEventListener('click', () => services.EditorSheet.open(State.selectedId));
         Dom.deleteBtn.addEventListener('click', () => services.Actions.deleteSelected());
         Dom.zoomInBtn.addEventListener('click', () => services.Viewport.zoomAt(1.12));
@@ -720,6 +816,9 @@ class MindCanvasModularView extends ItemView {
       editorNodeChip: q('#editorNodeChip'),
       addChildBtn: q('#addChildBtn'),
       addSiblingBtn: q('#addSiblingBtn'),
+      addNoteChildBtn: q('#addNoteChildBtn'),
+      linkActiveNoteBtn: q('#linkActiveNoteBtn'),
+      openNoteBtn: q('#openNoteBtn'),
       editBtn: q('#editBtn'),
       deleteBtn: q('#deleteBtn'),
       zoomInBtn: q('#zoomInBtn'),
@@ -756,6 +855,8 @@ module.exports = class MindCanvasModularPlugin extends Plugin {
     this._saveTimer = null;
     this.registerView(VIEW_TYPE, (leaf) => new MindCanvasModularView(leaf, this));
     this.addCommand({ id: 'open-mind-canvas-modular', name: 'Open Mind Canvas Modular', callback: async () => { await this.activateView(); } });
+    this.addCommand({ id: 'create-note-from-selected-node', name: 'Create note from selected node', checkCallback: (checking) => { const leaf = this.app.workspace.getLeavesOfType(VIEW_TYPE)[0]; const view = leaf && leaf.view; if (!view || !view.services) return false; if (!checking) view.services.Notes.createNoteForNode(view.services.State.selectedId || view.services.Tree.getRootId()); return true; } });
+    this.addCommand({ id: 'open-note-from-selected-node', name: 'Open note from selected node', checkCallback: (checking) => { const leaf = this.app.workspace.getLeavesOfType(VIEW_TYPE)[0]; const view = leaf && leaf.view; if (!view || !view.services) return false; if (!checking) view.services.Notes.openNodeNote(view.services.State.selectedId || view.services.Tree.getRootId()); return true; } });
     this.addRibbonIcon('git-branch-plus', 'Open Mind Canvas Modular', async () => { await this.activateView(); });
   }
 

@@ -1,9 +1,9 @@
 {
   "id": "mind-canvas-modular",
   "name": "Mind Canvas Modular",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "minAppVersion": "1.5.0",
-  "description": "Mind canvas plugin converted from the modular web tool.",
+  "description": "Mind canvas plugin with mobile layout fixes and note-backed nodes for Obsidian.",
   "author": "Louis Alviss",
   "authorUrl": "",
   "isDesktopOnly": false
