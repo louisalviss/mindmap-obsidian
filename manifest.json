@@ -1,0 +1,10 @@
+{
+  "id": "mind-note-map",
+  "name": "Mind Note Map",
+  "version": "0.1.0",
+  "minAppVersion": "1.5.0",
+  "description": "A MindNode-style mind map view for Obsidian with note-backed nodes.",
+  "author": "OpenAI",
+  "authorUrl": "https://openai.com",
+  "isDesktopOnly": false
+}
