@@ -1,0 +1,8 @@
+CHECKLIST
+1. Repo must be public.
+2. Files must stay at repo root: manifest.json, main.js, styles.css, versions.json.
+3. manifest.json version = 0.1.0
+4. versions.json must include: {"0.1.0":"1.5.0"}
+5. Create Git tag 0.1.0 or run workflow.
+6. Verify GitHub Release contains manifest.json, main.js, styles.css, versions.json.
+7. Then install with BRAT.

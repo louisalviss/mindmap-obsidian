@@ -1,44 +1,39 @@
 # Mind Note Map
 
-MindNode-style Obsidian plugin MVP with note-backed nodes.
+Obsidian plugin MVP: mind-map view with note-backed nodes.
 
-UI version shown inside the plugin: `v0.1.0`
-Plugin id: `mind-note-map`
-Minimum Obsidian version: `1.5.0`
+## Files that matter to Obsidian / BRAT
+- `manifest.json`
+- `main.js`
+- `styles.css`
+- `versions.json`
 
-## What this MVP does
-- Custom mind map view inside Obsidian
-- Drag nodes
-- Pan and zoom
-- Add child and sibling nodes
-- Inline rename
-- Create/open a Markdown note from a node
-- Link selected node to the active note
-- Auto-layout the tree
-- Save map state in plugin data
+## What was blocking BRAT
+BRAT does **not** install this from repo files alone in your current flow.
+It needs a GitHub **Release** whose tag matches `manifest.json.version`, and that release must expose `manifest.json`, `main.js`, and `styles.css` as release assets.
 
-## Important limitation
-This MVP stores the map layout in plugin data, not as a `.canvas` file yet.
+## Fast path
+1. Upload all files in this zip to the root of a public GitHub repo.
+2. Go to **Releases** and create tag **`0.1.0`**.
+3. Publish the release.
+4. Attach these files to the release:
+   - `manifest.json`
+   - `main.js`
+   - `styles.css`
+   - `versions.json`
+5. In BRAT, add the repo URL.
 
-## Commands
-- Open mind map
-- Add child to selected node
-- Add sibling to selected node
-- Open or create note for selected node
-- Link selected node to active note
-- Auto layout active map
-- Center on root
-- Reset active map
+## Easier path with GitHub Actions
+This zip includes `.github/workflows/release.yml`.
+After uploading the repo, do this:
+1. Open GitHub repo → **Actions** → enable workflows if asked.
+2. Create a tag named **`0.1.0`** and push it, or create it in the GitHub web UI.
+3. The workflow will automatically create a GitHub Release and upload:
+   - `manifest.json`
+   - `main.js`
+   - `styles.css`
+   - `versions.json`
+4. Then install from BRAT.
 
-## Manual install
-1. Open your vault folder.
-2. Go to `.obsidian/plugins/`.
-3. Create a folder named `mind-note-map`.
-4. Copy `manifest.json`, `main.js`, and `styles.css` into that folder.
-5. In Obsidian, open **Settings > Community plugins**.
-6. Turn on Community plugins.
-7. Enable **Mind Note Map**.
-8. Run command: **Open mind map**.
-
-## BRAT install
-See `BRAT-SETUP.md`.
+## Plugin id
+`mind-note-map`
